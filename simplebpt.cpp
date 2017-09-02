@@ -582,11 +582,11 @@ void save_hdr_file(const std::string &filename, const Color* image, const int wi
 
   // 輝度値書き出し
   fprintf(fp, "-Y %d +X %d%c", height, width, ret);
+  std::vector<HDRPixel> line(width);
   for (int i = height - 1; i >= 0; i --) {
-    std::vector<HDRPixel> line;
     for (int j = 0; j < width; j ++) {
       HDRPixel p = get_hdr_pixel(image[j + i * width]);
-      line.push_back(p);
+      line[j] = p;
     }
     fprintf(fp, "%c%c", 0x02, 0x02);
     fprintf(fp, "%c%c", (width >> 8) & 0xFF, width & 0xFF);
