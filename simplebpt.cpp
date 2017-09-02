@@ -609,6 +609,9 @@ int main(int argc, char **argv) {
   int samples = 1;
   int NSUB = 2;
 
+  if (argc > 1)
+    samples = atoi(argv[1]);
+
   // カメラ位置
   Ray camera(Vec(50.0, 52.0, 295.6), Normalize(Vec(0.0, -0.042612, -1.0)));
   // シーン内でのスクリーンのx,y方向のベクトル
