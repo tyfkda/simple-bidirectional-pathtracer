@@ -639,13 +639,13 @@ int main(int argc, char **argv) {
                        cy * (((sy + 0.5 + dy) / NSUB + y) / height- 0.5) +
                        camera.dir);
             accumulated_radiance = (accumulated_radiance +
-                                    radiance(camera, Ray(camera.org + dir * 130.0, Normalize(dir)), 0, &used_sample) / samples);
+                                    radiance(camera, Ray(camera.org + dir * 130.0, Normalize(dir)), 0, &used_sample));
           }
         }
       }
 
       int image_index = y * width + x;
-      image[image_index] = accumulated_radiance * (1.0 / (NSUB * NSUB));
+      image[image_index] = accumulated_radiance * (1.0 / (NSUB * NSUB * samples));
     }
     std::cerr << "Rendering (average: " << ((double)used_sample / width) << " spp) " << (100.0 * y / (height - 1)) << "%" << std::endl;
   }
