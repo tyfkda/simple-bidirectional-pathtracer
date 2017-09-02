@@ -13,7 +13,7 @@
 const double PI = 3.14159265358979323846;
 const double INF = 1e20;
 const double EPS = 1e-5;
-double MaxDepth = 5;
+double MaxDepth = 0;
 
 // *** その他の関数 ***
 inline double rand01() { return (double)rand()/RAND_MAX; }
@@ -150,7 +150,7 @@ void trace_scene(const Ray &ray, const int depth, std::vector<Vertex> *vertices)
   const Vec orienting_normal = Dot(normal, ray.dir) < 0.0 ? normal : (-1.0 * normal); // 交差位置の法線（物体からのレイの入出を考慮）
 
   double russian_roulette_probability = obj.color.max();
-  if (depth > MaxDepth) {
+  if (depth >= MaxDepth) {
     if (rand01() >= russian_roulette_probability) {
       vertices->push_back(Vertex(hitpoint, 0.0, id, 0.0, orienting_normal));
       return;
