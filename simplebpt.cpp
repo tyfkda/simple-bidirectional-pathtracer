@@ -13,7 +13,7 @@
 const double PI = 3.14159265358979323846;
 const double INF = 1e20;
 const double EPS = 1e-5;
-double MaxDepth = 0;
+int MaxDepth = 0;
 
 // *** その他の関数 ***
 inline double rand01() { return (double)rand()/RAND_MAX; }
@@ -622,17 +622,16 @@ int main(int argc, char **argv) {
   Vec cy = Normalize(Cross(cx, camera.dir)) * 0.5135;
   Color *image = new Color[width * height];
 
-  //#pragma omp parallel for schedule(dynamic, 1)
-  for (int y = 0; y < height; y ++) {
-    int used_sample = 0;
-    for (int x = 0; x < width; x ++) {
-      Color accumulated_radiance = Color();
-      // サブピクセルサンプリング
-      for (int sy = 0; sy < NSUB; sy ++) {
-        for (int sx = 0; sx < NSUB; sx ++) {
-
-          // 一つのサブピクセルあたりsamples回サンプリングする
-          for (int s = 0; s < samples; s ++) {
+  // 一つのサブピクセルあたりsamples回サンプリングする
+  for (int s = 0; s < samples; s ++) {
+    //#pragma omp parallel for schedule(dynamic, 1)
+    for (int y = 0; y < height; y ++) {
+      int used_sample = 0;
+      for (int x = 0; x < width; x ++) {
+        Color accumulated_radiance = Color();
+        // サブピクセルサンプリング
+        for (int sy = 0; sy < NSUB; sy ++) {
+          for (int sx = 0; sx < NSUB; sx ++) {
             // テントフィルターによってサンプリング
             // ピクセル範囲で一様にサンプリングするのではなく、ピクセル中央付近にサンプルがたくさん集まるように偏りを生じさせる
             const double r1 = 2.0 * rand01(), dx = r1 < 1.0 ? sqrt(r1) - 1.0 : 1.0 - sqrt(2.0 - r1);
@@ -643,14 +642,20 @@ int main(int argc, char **argv) {
             accumulated_radiance += radiance(camera, Ray(camera.org + dir * 130.0, Normalize(dir)), 0, &used_sample);
           }
         }
+
+        int image_index = y * width + x;
+        image[image_index] = (image[image_index] * s + accumulated_radiance * (1.0 / (NSUB * NSUB))) / (s + 1);
       }
 
-      int image_index = y * width + x;
-      image[image_index] = accumulated_radiance * (1.0 / (NSUB * NSUB * samples));
+      //std::cerr << "Rendering (average: " << ((double)used_sample / width) << " spp) " << (100.0 * y / (height - 1)) << "%" << std::endl;
+      fprintf(stderr,"\r#%d, %5.2f%%", s, 100.0 * y / (height - 1));
     }
-    std::cerr << "Rendering (average: " << ((double)used_sample / width) << " spp) " << (100.0 * y / (height - 1)) << "%" << std::endl;
-  }
+    //std::cerr << s << std::endl;
+    fprintf(stderr,"\r#%d/%d%20s\n", s, samples, " ");
 
-  // .hdrフォーマットで出力
-  save_hdr_file(std::string("image.hdr"), image, width, height);
+    // .hdrフォーマットで出力
+    char filename[20];
+    sprintf(filename, "image%d.hdr", s + 1);
+    save_hdr_file(filename, image, width, height);
+  }
 }
