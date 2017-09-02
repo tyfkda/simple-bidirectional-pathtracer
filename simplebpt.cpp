@@ -298,13 +298,13 @@ struct GeometryTermCache {
   }
 
   inline double calc(int idx0, int idx1) {
-    int tmp0 = idx0;
-    int tmp1 = idx1;
-    if (cache[indexs.size() * tmp0 + tmp1] < 0.0) { // キャッシュになかった
-      return (cache[indexs.size() * idx0 + idx1] = geometry_term(*indexs[tmp0], *indexs[tmp1]));
+    int i = indexs.size() * idx0 + idx1;
+    double g = cache[i];
+    if (g < 0.0) {  // キャッシュにない場合には計算
+      g = geometry_term(*indexs[idx0], *indexs[idx1]);
+      cache[i] = g;
     }
-    // キャッシュにあった
-    return cache[indexs.size() * idx0 + idx1];
+    return g;
   }
 };
 
