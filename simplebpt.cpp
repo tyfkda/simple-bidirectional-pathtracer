@@ -98,8 +98,8 @@ Sphere spheres[] = {
   Sphere(1e5, Vec(50,40.8,-1e5+170), Color(), Color(), DIFFUSE),// 手前
   Sphere(1e5, Vec(50, 1e5, 81.6),    Color(), Color(0.75, 0.75, 0.75),DIFFUSE),// 床
   Sphere(1e5, Vec(50,-1e5+81.6,81.6),Color(), Color(0.75, 0.75, 0.75),DIFFUSE),// 天井
-  Sphere(16.5,Vec(27,16.5,47),       Color(), Color(1,1,1)*.99, SPECULAR),// 鏡
-  Sphere(16.5,Vec(73,16.5,78),       Color(), Color(1,1,1)*.99, REFRACTION),//ガラス
+  Sphere(16.5,Vec(27,16.5,47),       Color(), Color(1,1,1)*.999, SPECULAR),// 鏡
+  Sphere(16.5,Vec(73,16.5,78),       Color(), Color(1,1,1)*.999, REFRACTION),//ガラス
 
   Sphere(5.0, Vec(50.0, 75.0, 81.6), Color(12,12,12)*4, Color(), DIFFUSE),//照明
 };
@@ -149,14 +149,14 @@ void trace_scene(const Ray &ray, const int depth, std::vector<Vertex> *vertices)
   const Vec normal  = Normalize(hitpoint - obj.position); // 交差位置の法線
   const Vec orienting_normal = Dot(normal, ray.dir) < 0.0 ? normal : (-1.0 * normal); // 交差位置の法線（物体からのレイの入出を考慮）
 
-  double russian_roulette_probability = obj.color.max();
+  double russian_roulette_probability = 1.0;
   if (depth >= MaxDepth) {
+    russian_roulette_probability = obj.color.max() * pow(0.9, depth - MaxDepth);
     if (rand01() >= russian_roulette_probability) {
       vertices->push_back(Vertex(hitpoint, 0.0, id, 0.0, orienting_normal));
       return;
     }
-  } else
-    russian_roulette_probability = 1.0;
+  }
 
   switch (obj.ref_type) {
   case DIFFUSE:
