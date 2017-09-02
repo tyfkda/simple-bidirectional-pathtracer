@@ -26,6 +26,7 @@ struct Vec {
   inline Vec operator-(const Vec &b) const {return Vec(x - b.x, y - b.y, z - b.z);}
   inline Vec operator*(const double b) const {return Vec(x * b, y * b, z * b);}
   inline Vec operator/(const double b) const {return Vec(x / b, y / b, z / b);}
+  inline const Vec& operator+=(const Vec &b) {*this = *this + b; return *this;}
   inline const double LengthSquared() const { return x * x + y * y + z * z; }
   inline const double Length() const { return sqrt(LengthSquared()); }
   inline double max() const { return std::max(x, std::max(y, z)); }
@@ -534,7 +535,7 @@ Color radiance(const Ray &camera, const Ray &ray, const int depth, int *used_sam
       if (weight[s * (NE + 1) + t] > 0.0)
         (*used_sample) ++;
 
-      accum = accum + weight[s * (NE + 1) + t] * Multiply(Multiply(alpha_L[s], c[s * (NE + 1) + t]), alpha_E[t]);
+      accum += weight[s * (NE + 1) + t] * Multiply(Multiply(alpha_L[s], c[s * (NE + 1) + t]), alpha_E[t]);
     }
   }
   return accum;
@@ -639,8 +640,7 @@ int main(int argc, char **argv) {
             Vec dir = (cx * (((sx + 0.5 + dx) / NSUB + x) / width - 0.5) +
                        cy * (((sy + 0.5 + dy) / NSUB + y) / height- 0.5) +
                        camera.dir);
-            accumulated_radiance = (accumulated_radiance +
-                                    radiance(camera, Ray(camera.org + dir * 130.0, Normalize(dir)), 0, &used_sample));
+            accumulated_radiance += radiance(camera, Ray(camera.org + dir * 130.0, Normalize(dir)), 0, &used_sample);
           }
         }
       }
