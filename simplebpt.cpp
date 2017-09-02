@@ -624,13 +624,10 @@ int main(int argc, char **argv) {
   for (int y = 0; y < height; y ++) {
     int used_sample = 0;
     for (int x = 0; x < width; x ++) {
-      int image_index = y * width + x;
-      image[image_index] = Color();
-
+      Color accumulated_radiance = Color();
       // サブピクセルサンプリング
       for (int sy = 0; sy < NSUB; sy ++) {
         for (int sx = 0; sx < NSUB; sx ++) {
-          Color accumulated_radiance = Color();
 
           // 一つのサブピクセルあたりsamples回サンプリングする
           for (int s = 0; s < samples; s ++) {
@@ -644,10 +641,11 @@ int main(int argc, char **argv) {
             accumulated_radiance = (accumulated_radiance +
                                     radiance(camera, Ray(camera.org + dir * 130.0, Normalize(dir)), 0, &used_sample) / samples);
           }
-
-          image[image_index] = image[image_index] + accumulated_radiance * (1.0 / (NSUB * NSUB));
         }
       }
+
+      int image_index = y * width + x;
+      image[image_index] = accumulated_radiance * (1.0 / (NSUB * NSUB));
     }
     std::cerr << "Rendering (average: " << ((double)used_sample / width) << " spp) " << (100.0 * y / (height - 1)) << "%" << std::endl;
   }
