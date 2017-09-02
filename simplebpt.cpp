@@ -518,7 +518,7 @@ Color radiance(const Ray &camera, const Ray &ray, const int depth, int *used_sam
       if (w != 0.0)
         weight[s * (NE + 1) + t] = 1.0 / w;
 
-      if (_isnan(weight[s * (NE + 1) + t])) {
+      if (isnan(weight[s * (NE + 1) + t])) {
         std::cout << w << " ";
       }
     }
