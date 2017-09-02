@@ -148,14 +148,14 @@ void trace_scene(const Ray &ray, const int depth, std::vector<Vertex> *vertices)
   const Vec normal  = Normalize(hitpoint - obj.position); // 交差位置の法線
   const Vec orienting_normal = Dot(normal, ray.dir) < 0.0 ? normal : (-1.0 * normal); // 交差位置の法線（物体からのレイの入出を考慮）
 
-  double rossian_roulette_probability = std::max(obj.color.x, std::max(obj.color.y, obj.color.z));
+  double russian_roulette_probability = std::max(obj.color.x, std::max(obj.color.y, obj.color.z));
   if (depth > MaxDepth) {
-    if (rand01() >= rossian_roulette_probability) {
+    if (rand01() >= russian_roulette_probability) {
       vertices->push_back(Vertex(hitpoint, 0.0, id, 0.0, orienting_normal));
       return;
     }
   } else
-    rossian_roulette_probability = 1.0;
+    russian_roulette_probability = 1.0;
 
   switch (obj.ref_type) {
   case DIFFUSE: {
@@ -174,15 +174,15 @@ void trace_scene(const Ray &ray, const int depth, std::vector<Vertex> *vertices)
 
     // 次の頂点へのパスの生成確率は　ロシアンルーレットの確率 * pdf⊥(ω)になる。
     // pdf⊥(ω) = pdf(ω) / cosθで、pdf(ω) = cosθ/π（コサイン項による重点サンプリング）なので、
-    // rossian_roulette_probability / πとなる
-    vertices->push_back(Vertex(hitpoint, rossian_roulette_probability * (1.0 / PI), id, obj.color * (1.0 / PI), orienting_normal));
+    // russian_roulette_probability / πとなる
+    vertices->push_back(Vertex(hitpoint, russian_roulette_probability * (1.0 / PI), id, obj.color * (1.0 / PI), orienting_normal));
     trace_scene(Ray(hitpoint, dir), depth + 1, vertices);
     return;
   } break;
   case SPECULAR: {
     // 完全鏡面なのでレイの反射方向は決定的。
     const Ray reflection_ray = Ray(hitpoint, ray.dir - normal * 2.0 * Dot(normal, ray.dir));
-    vertices->push_back(Vertex(hitpoint, rossian_roulette_probability, id, obj.color, orienting_normal));
+    vertices->push_back(Vertex(hitpoint, russian_roulette_probability, id, obj.color, orienting_normal));
     trace_scene(reflection_ray, depth + 1, vertices);
     return;
   } break;
@@ -199,7 +199,7 @@ void trace_scene(const Ray &ray, const int depth, std::vector<Vertex> *vertices)
     const double cos2t = 1.0 - nnt * nnt * (1.0 - ddn * ddn);
 
     if (cos2t < 0.0) { // 全反射した
-      vertices->push_back(Vertex(hitpoint, rossian_roulette_probability, id, obj.color, orienting_normal));
+      vertices->push_back(Vertex(hitpoint, russian_roulette_probability, id, obj.color, orienting_normal));
       trace_scene(reflection_ray, depth + 1, vertices);
       return ;
     }
@@ -219,11 +219,11 @@ void trace_scene(const Ray &ray, const int depth, std::vector<Vertex> *vertices)
     // 屈折と反射のどちらか一方を追跡する。（さもないと指数的にレイが増える）
     // ロシアンルーレットで決定する。
     if (rand01() < probability) { // 反射
-      vertices->push_back(Vertex(hitpoint, rossian_roulette_probability * probability, id, obj.color * Re, orienting_normal));
+      vertices->push_back(Vertex(hitpoint, russian_roulette_probability * probability, id, obj.color * Re, orienting_normal));
       trace_scene(reflection_ray, depth + 1, vertices);
       return;
     } else { // 屈折
-      vertices->push_back(Vertex(hitpoint, rossian_roulette_probability * (1.0 - probability), id, obj.color * Tr, -1.0 * orienting_normal));
+      vertices->push_back(Vertex(hitpoint, russian_roulette_probability * (1.0 - probability), id, obj.color * Tr, -1.0 * orienting_normal));
       trace_scene(Ray(hitpoint, tdir), depth + 1, vertices);
       return ;
     }
