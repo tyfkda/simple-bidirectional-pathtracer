@@ -127,10 +127,10 @@ inline double BRDF(int id, Vec pos, Vec in, Vec out) {
   switch (spheres[id].ref_type) {
   case DIFFUSE:
     return (1.0 / PI);
-  case SPECULAR: {
-  } break;
-  case REFRACTION: {
-  } break;
+  case SPECULAR:
+    break;
+  case REFRACTION:
+    break;
   }
   return 0.0;
 }
@@ -159,76 +159,78 @@ void trace_scene(const Ray &ray, const int depth, std::vector<Vertex> *vertices)
     russian_roulette_probability = 1.0;
 
   switch (obj.ref_type) {
-  case DIFFUSE: {
-    // orienting_normalの方向を基準とした正規直交基底(w, u, v)を作る。この基底に対する半球内で次のレイを飛ばす。
-    Vec w, u, v;
-    w = orienting_normal;
-    if (fabs(w.x) > 0.1)
-      u = Normalize(Cross(Vec(0.0, 1.0, 0.0), w));
-    else
-      u = Normalize(Cross(Vec(1.0, 0.0, 0.0), w));
-    v = Cross(w, u);
-    // コサイン項を使った重点的サンプリング
-    const double r1 = 2 * PI * rand01();
-    const double r2 = rand01(), r2s = sqrt(r2);
-    Vec dir = Normalize((u * cos(r1) * r2s + v * sin(r1) * r2s + w * sqrt(1.0 - r2)));
+  case DIFFUSE:
+    {
+      // orienting_normalの方向を基準とした正規直交基底(w, u, v)を作る。この基底に対する半球内で次のレイを飛ばす。
+      Vec w, u, v;
+      w = orienting_normal;
+      if (fabs(w.x) > 0.1)
+        u = Normalize(Cross(Vec(0.0, 1.0, 0.0), w));
+      else
+        u = Normalize(Cross(Vec(1.0, 0.0, 0.0), w));
+      v = Cross(w, u);
+      // コサイン項を使った重点的サンプリング
+      const double r1 = 2 * PI * rand01();
+      const double r2 = rand01(), r2s = sqrt(r2);
+      Vec dir = Normalize((u * cos(r1) * r2s + v * sin(r1) * r2s + w * sqrt(1.0 - r2)));
 
-    // 次の頂点へのパスの生成確率は　ロシアンルーレットの確率 * pdf⊥(ω)になる。
-    // pdf⊥(ω) = pdf(ω) / cosθで、pdf(ω) = cosθ/π（コサイン項による重点サンプリング）なので、
-    // russian_roulette_probability / πとなる
-    vertices->push_back(Vertex(hitpoint, russian_roulette_probability * (1.0 / PI), id, obj.color * (1.0 / PI), orienting_normal));
-    trace_scene(Ray(hitpoint, dir), depth + 1, vertices);
+      // 次の頂点へのパスの生成確率は　ロシアンルーレットの確率 * pdf⊥(ω)になる。
+      // pdf⊥(ω) = pdf(ω) / cosθで、pdf(ω) = cosθ/π（コサイン項による重点サンプリング）なので、
+      // russian_roulette_probability / πとなる
+      vertices->push_back(Vertex(hitpoint, russian_roulette_probability * (1.0 / PI), id, obj.color * (1.0 / PI), orienting_normal));
+      trace_scene(Ray(hitpoint, dir), depth + 1, vertices);
+    }
     return;
-  } break;
-  case SPECULAR: {
-    // 完全鏡面なのでレイの反射方向は決定的。
-    const Ray reflection_ray = Ray(hitpoint, ray.dir - normal * 2.0 * Dot(normal, ray.dir));
-    vertices->push_back(Vertex(hitpoint, russian_roulette_probability, id, obj.color, orienting_normal));
-    trace_scene(reflection_ray, depth + 1, vertices);
-    return;
-  } break;
-  case REFRACTION: {
-    const Ray reflection_ray = Ray(hitpoint, ray.dir - normal * 2.0 * Dot(normal, ray.dir));
-    const double cost = Dot(orienting_normal, reflection_ray.dir);
-    bool into = Dot(normal, orienting_normal) > 0.0; // レイがオブジェクトから出るのか、入るのか
-
-    // Snellの法則
-    const double nc = 1.0; // 真空の屈折率
-    const double nt = 1.5; // オブジェクトの屈折率
-    const double nnt = into ? nc / nt : nt / nc;
-    const double ddn = Dot(ray.dir, orienting_normal);
-    const double cos2t = 1.0 - nnt * nnt * (1.0 - ddn * ddn);
-
-    if (cos2t < 0.0) { // 全反射した
+  case SPECULAR:
+    {
+      // 完全鏡面なのでレイの反射方向は決定的。
+      const Ray reflection_ray = Ray(hitpoint, ray.dir - normal * 2.0 * Dot(normal, ray.dir));
       vertices->push_back(Vertex(hitpoint, russian_roulette_probability, id, obj.color, orienting_normal));
       trace_scene(reflection_ray, depth + 1, vertices);
-      return ;
     }
-    // 屈折していく方向
-    Vec tdir = Normalize(ray.dir * nnt - normal * (into ? 1.0 : -1.0) * (ddn * nnt + sqrt(cos2t)));
+    return;
+  case REFRACTION:
+    {
+      const Ray reflection_ray = Ray(hitpoint, ray.dir - normal * 2.0 * Dot(normal, ray.dir));
+      const double cost = Dot(orienting_normal, reflection_ray.dir);
+      bool into = Dot(normal, orienting_normal) > 0.0; // レイがオブジェクトから出るのか、入るのか
 
-    // SchlickによるFresnelの反射係数の近似
-    const double a = nt - nc, b = nt + nc;
-    const double R0 = (a * a) / (b * b);
-    const double c = 1.0 - (into ? -ddn : Dot(tdir, normal));
-    const double Re = R0 + (1.0 - R0) * pow(c, 5.0);
-    const double Tr = 1.0 - Re; // 屈折光の運ぶ光の量
-    const double probability  = 0.25 + 0.5 * Re;
+      // Snellの法則
+      const double nc = 1.0; // 真空の屈折率
+      const double nt = 1.5; // オブジェクトの屈折率
+      const double nnt = into ? nc / nt : nt / nc;
+      const double ddn = Dot(ray.dir, orienting_normal);
+      const double cos2t = 1.0 - nnt * nnt * (1.0 - ddn * ddn);
 
-    const double cost_ = Dot(-1.0 * orienting_normal, tdir);
+      if (cos2t < 0.0) { // 全反射した
+        vertices->push_back(Vertex(hitpoint, russian_roulette_probability, id, obj.color, orienting_normal));
+        trace_scene(reflection_ray, depth + 1, vertices);
+        return ;
+      }
+      // 屈折していく方向
+      Vec tdir = Normalize(ray.dir * nnt - normal * (into ? 1.0 : -1.0) * (ddn * nnt + sqrt(cos2t)));
 
-    // 屈折と反射のどちらか一方を追跡する。（さもないと指数的にレイが増える）
-    // ロシアンルーレットで決定する。
-    if (rand01() < probability) { // 反射
-      vertices->push_back(Vertex(hitpoint, russian_roulette_probability * probability, id, obj.color * Re, orienting_normal));
-      trace_scene(reflection_ray, depth + 1, vertices);
-      return;
-    } else { // 屈折
-      vertices->push_back(Vertex(hitpoint, russian_roulette_probability * (1.0 - probability), id, obj.color * Tr, -1.0 * orienting_normal));
-      trace_scene(Ray(hitpoint, tdir), depth + 1, vertices);
-      return ;
+      // SchlickによるFresnelの反射係数の近似
+      const double a = nt - nc, b = nt + nc;
+      const double R0 = (a * a) / (b * b);
+      const double c = 1.0 - (into ? -ddn : Dot(tdir, normal));
+      const double Re = R0 + (1.0 - R0) * pow(c, 5.0);
+      const double Tr = 1.0 - Re; // 屈折光の運ぶ光の量
+      const double probability  = 0.25 + 0.5 * Re;
+
+      const double cost_ = Dot(-1.0 * orienting_normal, tdir);
+
+      // 屈折と反射のどちらか一方を追跡する。（さもないと指数的にレイが増える）
+      // ロシアンルーレットで決定する。
+      if (rand01() < probability) { // 反射
+        vertices->push_back(Vertex(hitpoint, russian_roulette_probability * probability, id, obj.color * Re, orienting_normal));
+        trace_scene(reflection_ray, depth + 1, vertices);
+      } else { // 屈折
+        vertices->push_back(Vertex(hitpoint, russian_roulette_probability * (1.0 - probability), id, obj.color * Tr, -1.0 * orienting_normal));
+        trace_scene(Ray(hitpoint, tdir), depth + 1, vertices);
+      }
     }
-  } break;
+    return;
   }
 }
 
@@ -239,10 +241,10 @@ void trace_scene(const Ray &ray, const int depth, std::vector<Vertex> *vertices)
 // スペキュラ面上の場合、とりあえず1を返す（結局後で消滅する）
 inline double pass_generation_probability(const Vertex &v0, const Vertex &v1) {
   switch (spheres[v0.id].ref_type) {
-  case DIFFUSE: {
-    if (v0.id != LightID)
+  case DIFFUSE:
+    if (v0.id != LightID) {
       return 1.0 / PI;
-    else {
+    } else {
       const Vec dir = Normalize(v1.position - v0.position);
       const double dot = Dot(v0.normal, dir);
       if (dot <= 0.0) {
@@ -250,13 +252,11 @@ inline double pass_generation_probability(const Vertex &v0, const Vertex &v1) {
       }
       return 1.0 / (2.0 * PI * dot);
     }
-  } break;
-  case SPECULAR: {
+    break;
+  case SPECULAR:
     return 1.0;
-  } break;
-  case REFRACTION: {
+  case REFRACTION:
     return 1.0;
-  } break;
   }
 }
 
