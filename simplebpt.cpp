@@ -108,10 +108,10 @@ const int LightID = 8; // とてもダサイ。一般の場合に拡張するの
 // *** レンダリング用関数 ***
 // シーンとの交差判定関数
 inline bool intersect_scene(const Ray &ray, double *t, int *id) {
-  const double n = sizeof(spheres) / sizeof(Sphere);
+  const int n = sizeof(spheres) / sizeof(Sphere);
   *t  = INF;
   *id = -1;
-  for (int i = 0; i < int(n); i ++) {
+  for (int i = 0; i < n; i ++) {
     double d = spheres[i].intersect(ray);
     if (d > 0.0 && d < *t) {
       *t  = d;
