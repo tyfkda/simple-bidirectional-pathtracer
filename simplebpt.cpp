@@ -28,6 +28,7 @@ struct Vec {
   inline Vec operator/(const double b) const {return Vec(x / b, y / b, z / b);}
   inline const double LengthSquared() const { return x * x + y * y + z * z; }
   inline const double Length() const { return sqrt(LengthSquared()); }
+  inline double max() const { return std::max(x, std::max(y, z)); }
 };
 inline Vec operator*(double f, const Vec &v) { return v * f; }
 inline Vec Normalize(const Vec &v) { return v / v.Length(); }
@@ -148,7 +149,7 @@ void trace_scene(const Ray &ray, const int depth, std::vector<Vertex> *vertices)
   const Vec normal  = Normalize(hitpoint - obj.position); // 交差位置の法線
   const Vec orienting_normal = Dot(normal, ray.dir) < 0.0 ? normal : (-1.0 * normal); // 交差位置の法線（物体からのレイの入出を考慮）
 
-  double russian_roulette_probability = std::max(obj.color.x, std::max(obj.color.y, obj.color.z));
+  double russian_roulette_probability = obj.color.max();
   if (depth > MaxDepth) {
     if (rand01() >= russian_roulette_probability) {
       vertices->push_back(Vertex(hitpoint, 0.0, id, 0.0, orienting_normal));
@@ -555,7 +556,7 @@ struct HDRPixel {
 
 // doubleのRGB要素を.hdrフォーマット用に変換
 HDRPixel get_hdr_pixel(const Color &color) {
-  double d = std::max(color.x, std::max(color.y, color.z));
+  double d = color.max();
   if (d <= 1e-32)
     return HDRPixel();
   int e;
