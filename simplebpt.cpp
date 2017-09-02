@@ -282,11 +282,11 @@ inline double geometry_term(const Vertex &v0, const Vertex &v1) {
 
 // ジオメトリ項の計算は重いのでキャッシュする
 class GeometryTermCache {
-  std::vector<Vertex*> indexs;
+  std::vector<const Vertex*> indexs;
   std::vector<double> cache;
 
 public:
-  GeometryTermCache(std::vector<Vertex>& light_vertices, std::vector<Vertex>& eye_vertices) {
+  GeometryTermCache(const std::vector<Vertex>& light_vertices, const std::vector<Vertex>& eye_vertices) {
     int NL = light_vertices.size();
     int NE = eye_vertices.size();
     // indexsに L0, L1, ... L(NL-1), E(NE - 1), E(NE - 2) ... E(0) という順番で格納しておく
