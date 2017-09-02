@@ -100,7 +100,7 @@ Sphere spheres[] = {
   Sphere(16.5,Vec(27,16.5,47),       Color(), Color(1,1,1)*.99, SPECULAR),// 鏡
   Sphere(16.5,Vec(73,16.5,78),       Color(), Color(1,1,1)*.99, REFRACTION),//ガラス
 
-  Sphere(5.0, Vec(50.0, 75.0, 81.6),Color(12,12,12), Color(), DIFFUSE),//照明
+  Sphere(5.0, Vec(50.0, 75.0, 81.6), Color(12,12,12)*4, Color(), DIFFUSE),//照明
 };
 const int LightID = 8; // とてもダサイ。一般の場合に拡張するのはそう難しくないけど今回はしない
 
@@ -607,6 +607,7 @@ int main(int argc, char **argv) {
   int width = 640;
   int height = 480;
   int samples = 1;
+  int NSUB = 2;
 
   // カメラ位置
   Ray camera(Vec(50.0, 52.0, 295.6), Normalize(Vec(0.0, -0.042612, -1.0)));
@@ -622,9 +623,9 @@ int main(int argc, char **argv) {
       int image_index = y * width + x;
       image[image_index] = Color();
 
-      // 2x2のサブピクセルサンプリング
-      for (int sy = 0; sy < 2; sy ++) {
-        for (int sx = 0; sx < 2; sx ++) {
+      // サブピクセルサンプリング
+      for (int sy = 0; sy < NSUB; sy ++) {
+        for (int sx = 0; sx < NSUB; sx ++) {
           Color accumulated_radiance = Color();
 
           // 一つのサブピクセルあたりsamples回サンプリングする
@@ -633,14 +634,14 @@ int main(int argc, char **argv) {
             // ピクセル範囲で一様にサンプリングするのではなく、ピクセル中央付近にサンプルがたくさん集まるように偏りを生じさせる
             const double r1 = 2.0 * rand01(), dx = r1 < 1.0 ? sqrt(r1) - 1.0 : 1.0 - sqrt(2.0 - r1);
             const double r2 = 2.0 * rand01(), dy = r2 < 1.0 ? sqrt(r2) - 1.0 : 1.0 - sqrt(2.0 - r2);
-            Vec dir = (cx * (((sx + 0.5 + dx) / 2.0 + x) / width - 0.5) +
-                       cy * (((sy + 0.5 + dy) / 2.0 + y) / height- 0.5) +
+            Vec dir = (cx * (((sx + 0.5 + dx) / NSUB + x) / width - 0.5) +
+                       cy * (((sy + 0.5 + dy) / NSUB + y) / height- 0.5) +
                        camera.dir);
             accumulated_radiance = (accumulated_radiance +
                                     radiance(camera, Ray(camera.org + dir * 130.0, Normalize(dir)), 0, &used_sample) / samples);
           }
 
-          image[image_index] = image[image_index] + accumulated_radiance;
+          image[image_index] = image[image_index] + accumulated_radiance * (1.0 / (NSUB * NSUB));
         }
       }
     }
